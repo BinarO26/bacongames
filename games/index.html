@@ -327,7 +327,7 @@
   }
 
   grid.innerHTML = list.map(g => {
-    const fileName = g.name.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const fileName = g.name;
 
     return `
       <a class="game-card" href="./${encodeURIComponent(g.name)}/">
