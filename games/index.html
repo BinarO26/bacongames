@@ -236,7 +236,7 @@
    { name: "Five Nights at Freddy's Sister Location"},
    { name: "Five Nights at Freddy's UCN"},
    { name: "Five Nights at Freddy's World"},
-   { name: "Five Nights at Winstons"},
+   { name: "Five Nights at Winston's"},
    { name: "GBA Emulator"},
    { name: "Geometry Dash"},
    { name: "Getaway Shoot out"},
@@ -321,23 +321,32 @@
   const search = document.getElementById('search');
 
   function renderGames(list) {
-    if (list.length === 0) {
-      grid.innerHTML = '<div class="empty">No games found</div>';
-      return;
-    }
-grid.innerHTML = list.map(g => `
-  <a class="game-card" href="./${g.name.replace(/ /g, "-")}/">
-    <div class="thumb">
-      <img src="images/${g.name.toLowerCase().replace(/[^a-z0-9]+/g, "")}.png" alt="${g.name}">
-    </div>
-    <div class="info">
-      <div class="name">${g.name}</div>
-    </div>
-  </a>
-`).join('');
-      </a>`
-    ).join('');
+  if (list.length === 0) {
+    grid.innerHTML = '<div class="empty">No games found</div>';
+    return;
   }
+
+  grid.innerHTML = list.map(g => {
+    const fileName = g.name.toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+    return `
+      <a class="game-card" href="./${encodeURIComponent(g.name)}/">
+        <div class="thumb">
+          <div class="no-image">${g.name}</div>
+          <img
+            src="images/${fileName}.png"
+            alt="${g.name}"
+            onload="this.previousElementSibling.style.display='none'"
+            onerror="this.style.display='none'"
+          >
+        </div>
+        <div class="info">
+          <div class="name">${g.name}</div>
+        </div>
+      </a>
+    `;
+  }).join("");
+}
 
   function filterGames() {
     const q = search.value.trim().toLowerCase();
