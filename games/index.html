@@ -191,161 +191,42 @@
 
 <!--EXAMPLE GAME: { name: ""},-->
 <script>
-  const games = [
-   { name: "1v1 LOL"},
-   { name: "2 Doom"},
-   { name: "8 Ball Pool"},
-   { name: "10 Bullets"},
-   { name: "2048"},
-   { name: "Age of War 2"},
-   { name: "Angry Birds"},
-   { name: "Appel"},
-   { name: "Backrooms Escape"},
-   { name: "Bad Piggies"},
-   { name: "Baldi's Basics"},
-   { name: "Balloons Tower Defense 5"},
-   { name: "Basketball Starz"},
-   { name: "Basketrandom"},
-   { name: "Bendy and The Ink Machine"},
-   { name: "Black Jack"},
-   { name: "Bloxorz"},
-   { name: "Boxing Random"},
-   { name: "Brawl Stars"},
-   { name: "Buckshot Roulette"},
-   { name: "Candy Crush"},
-   { name: "Celeste"},
-   { name: "Cookie Clicker"},
-   { name: "Crossy Road"},
-   { name: "Cup Head"},
-   { name: "Death Run 3D"},
-   { name: "Deltarune"},
-   { name: "Doom"},
-   { name: "Doom 2"},
-   { name: "Dune"},
-   { name: "Escape Road"},
-   { name: "Escape Road 2"},
-   { name: "Fears To Fathom/home-alone"},
-   { name: "Fire Boy and Water Girl"},
-   { name: "Fire Boy and Water Girl 2"},
-   { name: "Fire Boy and Water Girl 3"},
-   { name: "Five Nights at Freddy's"},
-   { name: "Five Nights at Freddy's 2"},
-   { name: "Five Nights at Freddy's 3"},
-   { name: "Five Nights at Freddy's 4"},
-   { name: "Five Nights at Freddy's Pizza Simulator"},
-   { name: "Five Nights at Freddy's Sister Location"},
-   { name: "Five Nights at Freddy's UCN"},
-   { name: "Five Nights at Freddy's World"},
-   { name: "Five Nights at Winston's"},
-   { name: "GBA Emulator"},
-   { name: "Geometry Dash"},
-   { name: "Getaway Shoot out"},
-   { name: "Getting Over It"},
-   { name: "Gun Knight"},
-   { name: "Gun Mayhem"},
-   { name: "Half Life"},
-   { name: "Heist"},
-   { name: "Helix Jump"},
-   { name: "Henry Stickmin Escaping the Prison"},
-   { name: "Hole io"},
-   { name: "Hollow Knight"},
-   { name: "Hollow Knight, Silk Song"},
-   { name: "Hotline Miami"},
-   { name: "Idle Miner Tycoon"},
-   { name: "Infinite Craft"},
-   { name: "Just Fall LOL"},
-   { name: "Learn To Fly 3"},
-   { name: "Legend of Zelda Majora's Mask"},
-   { name: "Legend of Zelda Ocarina of Time"},
-   { name: "Little Alchemy 2"},
-   { name: "Madalin Stunt Cars"},
-   { name: "Madalin Stunt Cars 3"},
-   { name: "Merge Round Racers"},
-   { name: "Minecraft"},
-   { name: "Moto X3M"},
-   { name: "Moto X3M 2"},
-   { name: "Moto X3M 3"},
-   { name: "Moto X3M Pool Party"},
-   { name: "Moto X3M Winter Land"},
-   { name: "Only Up"},
-   { name: "OvO"},
-   { name: "Paper io 2"},
-   { name: "Parking Fury 3"},
-   { name: "People Playground"},
-   { name: "Pixel Shooter"},
-   { name: "Plants vs Zombies"},
-   { name: "Poly Track"},
-   { name: "Repo"},
-   { name: "Retrobowl"},
-   { name: "Retrobowl College"},
-   { name: "Rocket Goal io"},
-   { name: "Rolling Sky"},
-   { name: "Rooftop Snipers"},
-   { name: "Run 3"},
-   { name: "Sandtris"},
-   { name: "Slender Man"},
-   { name: "Slope"},
-   { name: "Snake io"},
-   { name: "Snow Rider 3D"},
-   { name: "Snowball io"},
-   { name: "Soccer Random"},
-   { name: "Sonic"},
-   { name: "Speed Stars"},
-   { name: "Steal A Brainrot"},
-   { name: "Stickman Climb"},
-   { name: "Stickman Hook"},
-   { name: "Stumble Guys"},
-   { name: "Super Mario 64"},
-   { name: "Temple Run 2"},
-   { name: "Tetris"},
-   { name: "That's Not My Neighbor"},
-   { name: "The Impossible Quiz"},
-   { name: "The Oregon Trail"},
-   { name: "This is The Only Level"},
-   { name: "Time Shooter 2"},
-   { name: "Time Shooter 3 S.W.A.T"},
-   { name: "Tiny Fishing"},
-   { name: "Tomb of The Mask"},
-   { name: "Tunnel Rush 2"},
-   { name: "Ultra Kill"},
-   { name: "Vex 7"},
-   { name: "Volley Random"},
-   { name: "We Become What We Behold"},
-   { name: "Wordle"},
-   { name: "World Guessr"},
-   { name: "World's Hardest Game 3"},
-   ];
+  const OWNER = 'BinarO26';
+  const REPO = 'bacongames';
+  const GAMES_PATH = 'games'; // folder containing one subfolder per game
+
+  let games = [];
 
   const grid = document.getElementById('grid');
   const search = document.getElementById('search');
 
   function renderGames(list) {
-  if (list.length === 0) {
-    grid.innerHTML = '<div class="empty">No games found</div>';
-    return;
+    if (list.length === 0) {
+      grid.innerHTML = '<div class="empty">No games found</div>';
+      return;
+    }
+
+    grid.innerHTML = list.map(g => {
+      const fileName = g.name;
+
+      return `
+        <a class="game-card" href="./${encodeURIComponent(g.name)}/">
+          <div class="thumb">
+            <div class="no-image">${g.name}</div>
+            <img
+              src="images/${fileName}.png"
+              alt="${g.name}"
+              onload="this.previousElementSibling.style.display='none'"
+              onerror="this.style.display='none'"
+            >
+          </div>
+          <div class="info">
+            <div class="name">${g.name}</div>
+          </div>
+        </a>
+      `;
+    }).join("");
   }
-
-  grid.innerHTML = list.map(g => {
-    const fileName = g.name;
-
-    return `
-      <a class="game-card" href="./${encodeURIComponent(g.name)}/">
-        <div class="thumb">
-          <div class="no-image">${g.name}</div>
-          <img
-            src="images/${fileName}.png"
-            alt="${g.name}"
-            onload="this.previousElementSibling.style.display='none'"
-            onerror="this.style.display='none'"
-          >
-        </div>
-        <div class="info">
-          <div class="name">${g.name}</div>
-        </div>
-      </a>
-    `;
-  }).join("");
-}
 
   function filterGames() {
     const q = search.value.trim().toLowerCase();
@@ -353,7 +234,27 @@
     renderGames(filtered);
   }
 
-  renderGames(games);
+  async function loadGames() {
+    grid.innerHTML = '<div class="empty">Loading games...</div>';
+    try {
+      const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${GAMES_PATH}`);
+      if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
+      const items = await res.json();
+
+      games = items
+        .filter(item => item.type === 'dir')
+        .filter(item => item.name.toLowerCase() !== 'images')
+        .map(item => ({ name: item.name }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      renderGames(games);
+    } catch (err) {
+      console.error('Failed to load games:', err);
+      grid.innerHTML = '<div class="empty">Could not load games list</div>';
+    }
+  }
+
+  loadGames();
 </script>
 
 </body>
