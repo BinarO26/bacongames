@@ -189,13 +189,15 @@
 
 <footer>Created by Pausuu & Binaro26</footer>
 
-<!--EXAMPLE GAME: { name: ""},-->
 <script>
   const OWNER = 'BinarO26';
   const REPO = 'bacongames';
-  const GAMES_PATH = 'games'; // folder containing one subfolder per game
+  const GAMES_PATH = 'games';
+  const CACHE_KEY = 'bacongames_list_cache';
+  const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
-  let games = [];
+  let games = [];       // [{ name, lower }]
+  let searchDebounce = null;
 
   const grid = document.getElementById('grid');
   const search = document.getElementById('search');
@@ -206,54 +208,114 @@
       return;
     }
 
-    grid.innerHTML = list.map(g => {
-      const fileName = g.name;
-
-      return `
-        <a class="game-card" href="./${encodeURIComponent(g.name)}/">
-          <div class="thumb">
-            <div class="no-image">${g.name}</div>
-            <img
-              src="images/${fileName}.png"
-              alt="${g.name}"
-              onload="this.previousElementSibling.style.display='none'"
-              onerror="this.style.display='none'"
-            >
-          </div>
-          <div class="info">
-            <div class="name">${g.name}</div>
-          </div>
-        </a>
-      `;
-    }).join("");
+    // Build with an array + join (fast) instead of repeated string concatenation
+    const html = new Array(list.length);
+    for (let i = 0; i < list.length; i++) {
+      const name = list[i].name;
+      const encoded = encodeURIComponent(name);
+      html[i] =
+        `<a class="game-card" href="./${encoded}/">` +
+          `<div class="thumb">` +
+            `<div class="no-image">${name}</div>` +
+            `<img src="images/${name}.png" alt="${name}" loading="lazy" ` +
+              `onload="this.previousElementSibling.style.display='none'" ` +
+              `onerror="this.style.display='none'">` +
+          `</div>` +
+          `<div class="info"><div class="name">${name}</div></div>` +
+        `</a>`;
+    }
+    grid.innerHTML = html.join('');
   }
 
   function filterGames() {
     const q = search.value.trim().toLowerCase();
-    const filtered = games.filter(g => g.name.toLowerCase().includes(q));
+    const filtered = q === ''
+      ? games
+      : games.filter(g => g.lower.includes(q));
     renderGames(filtered);
   }
 
-  async function loadGames() {
-    grid.innerHTML = '<div class="empty">Loading games...</div>';
+  // Debounce so it doesn't re-render on every single keystroke
+  function onSearchInput() {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(filterGames, 120);
+  }
+
+  function readCache() {
     try {
-      const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${GAMES_PATH}`);
-      if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
-      const items = await res.json();
-
-      games = items
-        .filter(item => item.type === 'dir')
-        .filter(item => item.name.toLowerCase() !== 'images')
-        .map(item => ({ name: item.name }))
-        .sort((a, b) => a.name.localeCompare(b.name));
-
-      renderGames(games);
-    } catch (err) {
-      console.error('Failed to load games:', err);
-      grid.innerHTML = '<div class="empty">Could not load games list</div>';
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (Date.now() - parsed.timestamp > CACHE_TTL_MS) return null;
+      return parsed.games;
+    } catch {
+      return null;
     }
   }
 
+  function writeCache(list) {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        timestamp: Date.now(),
+        games: list
+      }));
+    } catch {
+      // ignore quota/private-browsing errors
+    }
+  }
+
+  function toGameList(items) {
+    return items
+      .filter(item => item.type === 'dir' && item.name.toLowerCase() !== 'images')
+      .map(item => item.name)
+      .sort((a, b) => a.localeCompare(b));
+  }
+
+  async function fetchGamesFromApi() {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${OWNER}/${REPO}/contents/${GAMES_PATH}`,
+        { signal: controller.signal }
+      );
+      clearTimeout(timeout);
+      if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
+      const items = await res.json();
+      return toGameList(items);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  async function loadGames() {
+    // 1. Show cached list instantly if we have one (feels instant on repeat visits)
+    const cached = readCache();
+    if (cached) {
+      games = cached.map(name => ({ name, lower: name.toLowerCase() }));
+      renderGames(games);
+    } else {
+      grid.innerHTML = '<div class="empty">Loading games...</div>';
+    }
+
+    // 2. Always refresh in the background so the list stays current
+    try {
+      const fresh = await fetchGamesFromApi();
+      games = fresh.map(name => ({ name, lower: name.toLowerCase() }));
+      writeCache(fresh);
+      renderGames(games);
+    } catch (err) {
+      console.error('Failed to refresh games list:', err);
+      // If we had nothing cached AND the fetch failed, show an error
+      if (!cached) {
+        grid.innerHTML = '<div class="empty">Could not load games list</div>';
+      }
+      // If we had a cache, just silently keep showing the cached version
+    }
+  }
+
+  search.addEventListener('input', onSearchInput);
   loadGames();
 </script>
 
