@@ -33,6 +33,7 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
   }
+
   nav a {
     color: rgba(255,255,255,.5);
     text-decoration: none;
@@ -43,9 +44,22 @@
     transition: all .2s ease;
     white-space: nowrap;
   }
-  nav a:hover { color: #fff; background: rgba(255,255,255,.1); transform: translateY(-1px); }
-  nav a.active { color: #000; background: #fff; font-weight: 600; }
-  nav a.active:hover { transform: none; }
+
+  nav a:hover {
+    color: #fff;
+    background: rgba(255,255,255,.1);
+    transform: translateY(-1px);
+  }
+
+  nav a.active {
+    color: #000;
+    background: #fff;
+    font-weight: 600;
+  }
+
+  nav a.active:hover {
+    transform: none;
+  }
 
   .content {
     max-width: 1000px;
@@ -79,7 +93,12 @@
     height: 38px;
     min-width: 220px;
   }
-  .search-bar .icon { color: rgba(255,255,255,.3); font-size: 14px; }
+
+  .search-bar .icon {
+    color: rgba(255,255,255,.3);
+    font-size: 14px;
+  }
+
   .search-bar input {
     flex: 1;
     background: none;
@@ -89,7 +108,10 @@
     font-size: 14px;
     font-family: inherit;
   }
-  .search-bar input::placeholder { color: rgba(255,255,255,.3); }
+
+  .search-bar input::placeholder {
+    color: rgba(255,255,255,.3);
+  }
 
   .games-grid {
     display: grid;
@@ -97,9 +119,23 @@
     gap: 14px;
   }
 
-  @media (max-width: 900px) { .games-grid { grid-template-columns: repeat(4, 1fr); } }
-  @media (max-width: 600px) { .games-grid { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 400px) { .games-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 900px) {
+    .games-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  @media (max-width: 600px) {
+    .games-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 400px) {
+    .games-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
 
   .game-card {
     background: rgba(255,255,255,.04);
@@ -111,6 +147,7 @@
     transition: all .2s ease;
     cursor: pointer;
   }
+
   .game-card:hover {
     background: rgba(255,255,255,.08);
     transform: translateY(-3px);
@@ -185,6 +222,7 @@
       <input id="search" type="text" placeholder="Search Games..." oninput="filterGames()">
     </div>
   </div>
+
   <div class="games-grid" id="grid"></div>
 </div>
 
@@ -209,13 +247,14 @@
       return;
     }
 
-    // Build with an array + join (fast) instead of repeated string concatenation
     const html = new Array(list.length);
+
     for (let i = 0; i < list.length; i++) {
       const name = list[i].name;
       const encoded = encodeURIComponent(name);
+
       html[i] =
-        `<a class="game-card" href="./${encoded}/">` +
+        `<a class="game-card" href="./${encoded}/" target="_blank">` +
           `<div class="thumb">` +
             `<div class="no-image">${name}</div>` +
             `<img src="images/${name}.png" alt="${name}" loading="lazy" ` +
@@ -225,6 +264,7 @@
           `<div class="info"><div class="name">${name}</div></div>` +
         `</a>`;
     }
+
     grid.innerHTML = html.join('');
   }
 
@@ -255,8 +295,13 @@
     try {
       const raw = localStorage.getItem(CACHE_KEY);
       if (!raw) return null;
+
       const parsed = JSON.parse(raw);
-      if (Date.now() - parsed.timestamp > CACHE_TTL_MS) return null;
+
+      if (Date.now() - parsed.timestamp > CACHE_TTL_MS) {
+        return null;
+      }
+
       return parsed.games;
     } catch {
       return null;
@@ -276,23 +321,32 @@
 
   function toGameList(items) {
     return items
-      .filter(item => item.type === 'dir' && item.name.toLowerCase() !== 'images')
+      .filter(item =>
+        item.type === 'dir' &&
+        item.name.toLowerCase() !== 'images'
+      )
       .map(item => item.name)
       .sort((a, b) => a.localeCompare(b));
   }
 
   async function fetchGamesFromApi() {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout
+    const timeout = setTimeout(() => controller.abort(), 8000);
 
     try {
       const res = await fetch(
         `https://api.github.com/repos/${OWNER}/${REPO}/contents/${GAMES_PATH}`,
         { signal: controller.signal }
       );
+
       clearTimeout(timeout);
-      if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
+
+      if (!res.ok) {
+        throw new Error(`GitHub API returned ${res.status}`);
+      }
+
       const items = await res.json();
+
       return toGameList(items);
     } finally {
       clearTimeout(timeout);
@@ -300,30 +354,38 @@
   }
 
   async function loadGames() {
-    // 1. Show cached list instantly if we have one (feels instant on repeat visits)
+    // 1. Show cached list instantly if we have one
     const cached = readCache();
+
     if (cached) {
-      games = cached.map(name => ({ name, lower: name.toLowerCase() }));
+      games = cached.map(name => ({
+        name,
+        lower: name.toLowerCase()
+      }));
+
       filterGames();
     } else {
       grid.innerHTML = '<div class="empty">Loading games...</div>';
     }
 
-    // 2. Always refresh in the background so the list stays current
+    // 2. Always refresh in the background
     try {
       const fresh = await fetchGamesFromApi();
-      games = fresh.map(name => ({ name, lower: name.toLowerCase() }));
+
+      games = fresh.map(name => ({
+        name,
+        lower: name.toLowerCase()
+      }));
+
       writeCache(fresh);
       filterGames();
+
     } catch (err) {
       console.error('Failed to refresh games list:', err);
 
-      // If we had nothing cached AND the fetch failed, show an error
       if (!cached) {
         grid.innerHTML = '<div class="empty">Could not load games list</div>';
       }
-
-      // If we had a cache, just silently keep showing the cached version
     }
   }
 
