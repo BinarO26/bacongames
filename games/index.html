@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -229,9 +230,18 @@
 
   function filterGames() {
     const q = search.value.trim().toLowerCase();
-    const filtered = q === ''
-      ? games
-      : games.filter(g => g.lower.includes(q));
+
+    const filtered = games.filter(g => {
+      // Secret is ONLY shown when the search is exactly "secret",
+      // regardless of capitalization.
+      if (g.lower === 'secret') {
+        return q === 'secret';
+      }
+
+      // All other games keep the original search behavior.
+      return q === '' || g.lower.includes(q);
+    });
+
     renderGames(filtered);
   }
 
@@ -294,7 +304,7 @@
     const cached = readCache();
     if (cached) {
       games = cached.map(name => ({ name, lower: name.toLowerCase() }));
-      renderGames(games);
+      filterGames();
     } else {
       grid.innerHTML = '<div class="empty">Loading games...</div>';
     }
@@ -304,13 +314,15 @@
       const fresh = await fetchGamesFromApi();
       games = fresh.map(name => ({ name, lower: name.toLowerCase() }));
       writeCache(fresh);
-      renderGames(games);
+      filterGames();
     } catch (err) {
       console.error('Failed to refresh games list:', err);
+
       // If we had nothing cached AND the fetch failed, show an error
       if (!cached) {
         grid.innerHTML = '<div class="empty">Could not load games list</div>';
       }
+
       // If we had a cache, just silently keep showing the cached version
     }
   }
@@ -321,3 +333,4 @@
 
 </body>
 </html>
+```
