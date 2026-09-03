@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -156,22 +155,35 @@
   }
 
   .game-card .thumb {
+    position: relative;
     width: 100%;
     aspect-ratio: 1;
     background: rgba(255,255,255,.06);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 36px;
     border-bottom: 1px solid rgba(255,255,255,.06);
     border-radius: 12px 12px 0 0;
     overflow: hidden;
   }
 
   .game-card .thumb img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
+  }
+
+  .game-card .fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,.5);
   }
 
   .game-card .info {
@@ -219,14 +231,14 @@
     <h1>Games Library</h1>
     <div class="search-bar">
       <span class="icon">&#128269;</span>
-      <input id="search" type="text" placeholder="Search Games..." oninput="filterGames()">
+      <input id="search" type="text" placeholder="Search Games...">
     </div>
   </div>
 
   <div class="games-grid" id="grid"></div>
 </div>
 
-<footer>Created by Pausuu & Binaro26</footer>
+<footer>Created by Pausuu &amp; Binaro26</footer>
 
 <script>
   const OWNER = 'BinarO26';
@@ -235,11 +247,224 @@
   const CACHE_KEY = 'bacongames_list_cache';
   const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
+  // Square cover art hosted by the game portals themselves
+  // (CrazyGames, Poki, GameDistribution, Steam, ...).
+  const COVERS = {
+    "10 Bullets": "https://static.vecteezy.com/system/resources/previews/037/831/057/non_2x/bullets-glyph-square-two-color-icon-vector.jpg",
+    "10 Minutes Till Dawn": "https://imgs.crazygames.com/auto-covers/10-minutes-till-dawn_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "12 Mini Battles": "https://imgs.crazygames.com/games/12-minibattles/cover_1x1-1707829554217.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "1v1 LOL": "https://www.giantbomb.com/a/uploads/scale_small/45/454004/3160840-1v1.lol%20official%20logo.jpg",
+    "2 Doom": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Doom_%E2%80%93_Game%E2%80%99s_logo.svg/500px-Doom_%E2%80%93_Game%E2%80%99s_logo.svg.png",
+    "2048": "https://cdn.cloudflare.steamstatic.com/steam/apps/942050/library_600x900.jpg",
+    "2048 Cupcakes": "https://blockblasts.io/assets/upload/poki/webp/2048-cupcakes.webp",
+    "3D Flight Simulator": "https://imgs.crazygames.com/auto-covers/3d-flight-simulator_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "8 Ball Pool": "https://imgs.crazygames.com/8-ball-pool-wyr_1x1/20251027031134/8-ball-pool-wyr_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Agar io": "https://imgs.crazygames.com/auto-covers/agario_1x1?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Age of War": "https://imgs.crazygames.com/ageofwar.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Age of War 2": "https://img.gamemonetize.com/i5wgtrvlkkrcg6v9y8yzo884y4xhpai9/512x512.jpg",
+    "Angry Birds": "https://assets-prd.ignimgs.com/2023/02/07/angrybirdssspace-1675798595163.jpg",
+    "Angry Birds Showdown": "https://gogamego.io/wp-content/uploads/thumbs/custom/A/Angry-Birds-Showdown.webp",
+    "Angry Birds Space": "https://static.wikia.nocookie.net/logopedia/images/9/95/Angry_Birds_Space_HD_Square_Icon.png/revision/latest?cb=20160701161321",
+    "Appel": "https://imgs.crazygames.com/auto-covers2/appel_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Awsome Tanks": "https://thumbnails.gamenora.com/Awesome%20Tanks.webp",
+    "Awsome Tanks 2": "https://cdn.kiz10.com/upload/thumbnails/1397587785_atanks2_2.png",
+    "Backrooms Escape": "https://images.stopgame.ru/games/logos/27991/c448x448/qCEqTHdkp1VKddwM17Y0uA/backrooms_escape_together-square_1.jpg",
+    "Bad Piggies": "https://static.wikia.nocookie.net/angrybirds/images/9/95/Bad_Piggies_Icon_2017.png/revision/latest?cb=20200329183234",
+    "Baseball Bros": "https://baseballbrosonline.com/baseball_bros.webp",
+    "Basket Bros": "https://imgs.crazygames.com/basketbros_1x1/20251107022434/basketbros_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Basketball Legends": "https://minigamesville.com/wp-content/uploads/2025/08/Basketball-Legends.png",
+    "Basketball Starz": "https://imgs.crazygames.com/games/basketball-stars-2019/cover_1x1-1732721654454.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Basketrandom": "https://imgs.crazygames.com/basket-random_1x1/20240617090207/basket-random_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Bendy and The Ink Machine": "https://cdn.cloudflare.steamstatic.com/steam/apps/622650/library_600x900.jpg",
+    "Black Jack": "https://static.vecteezy.com/system/resources/previews/007/214/654/non_2x/blackjack-color-icon-card-game-twenty-one-casino-isolated-illustration-vector.jpg",
+    "Block Blast": "https://imgs.crazygames.com/block-puzzle-master_1x1/20250924025352/block-puzzle-master_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Blocky Snake": "https://cdn.cloudflare.steamstatic.com/steam/apps/1836210/library_600x900.jpg",
+    "Bloons TD 1": "https://www.playbloonstowerdefense.com/assets/bloons-td-1.png",
+    "Bloons TD 2": "https://bloons-td.com/wp-content/uploads/2025/12/bloons-td-2.webp",
+    "Bloons TD 3": "https://bloons-td.com/wp-content/uploads/2025/12/bloons-td-3.webp",
+    "Bloons TD 4": "https://bloons-td.com/wp-content/uploads/2025/12/bloons-td-4.webp",
+    "Bloons TD 5": "https://cdn.cloudflare.steamstatic.com/steam/apps/306020/library_600x900.jpg",
+    "Bloxorz": "https://imgs.crazygames.com/games/bloxorz/cover-1669373098527.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Blumgi Racers": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/f9ea10a5c3cd14ac288a3fbd28b687d2/blumgi-bloom.png",
+    "Bow Masters": "https://d2u1q3j7uk6p0t.cloudfront.net/LVOIa6Hey8FijLCNoBRpZEKDI37bGtOh20UN2umov4XPEXUIjYlmQ2vH1TQ0FOxY5v5X",
+    "Boxing Random": "https://imgs.crazygames.com/auto-covers/boxing-random_1x1.jpeg?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Brawl Stars": "https://vignette.wikia.nocookie.net/brawlstars/images/1/1c/Brawl_Icon.png/revision/latest?cb=20170621183335",
+    "Candy Crush": "https://assets-prd.ignimgs.com/2023/03/30/candycrush-1680217300908.jpg",
+    "Celeste": "https://cdn.cloudflare.steamstatic.com/steam/apps/504230/library_600x900.jpg",
+    "Choppy Orc": "https://gogamego.io/wp-content/uploads/thumbs/custom/C/choppy-orc.webp",
+    "Cookie Clicker": "https://cdn.cloudflare.steamstatic.com/steam/apps/1454400/library_600x900.jpg",
+    "Crazy Cattle 3D": "https://d11jzht7mj96rr.cloudfront.net/media/posts/893/crazy-cattle-3d.webp",
+    "Crossy Road": "http://img1.wikia.nocookie.net/__cb20141215200414/logopedia/images/c/c9/CrossyRoadAppIcon.png",
+    "Cup Head": "https://imgs.crazygames.com/auto-covers2/cuphead_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Cut The Rope": "https://imgs.crazygames.com/cut-the-rope-ebx_1x1/20240530085010/cut-the-rope-ebx_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Death Run 3D": "https://kickoutgames.com/wp-content/uploads/2025/09/death-run-3d-game-cover_1x1.webp",
+    "Deltarune": "https://cdn.cloudflare.steamstatic.com/steam/apps/1671210/library_600x900.jpg",
+    "Doodle Jump": "https://doodle-jump2.github.io/data/image/game/doodle-jump-game.png",
+    "Doom": "https://cdn.cloudflare.steamstatic.com/steam/apps/379720/library_600x900.jpg",
+    "Doom 2": "https://cdn2.steamgriddb.com/file/sgdb-cdn/icon_thumb/8d2eee28cb5170c58b8e7c9a9a648a25.png",
+    "Drift Boss": "https://imgs.crazygames.com/drift-boss_1x1/20260209092420/drift-boss_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Drive Mad": "https://drive-mad.co/wp-content/uploads/2025/07/drive-Mad.webp",
+    "Duck Life": "https://imgs.crazygames.com/ducklife.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Duck Life 2": "https://imgs.crazygames.com/ducklife2.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Duck Life 3": "https://imgs.crazygames.com/auto-covers/ducklife-3_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Duck Life 4": "https://imgs.crazygames.com/auto-covers/ducklife-4_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Duck Life 5": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/d0048d89-e4fa-4adb-9c77-adc51e4e1c6b/duck-life.png",
+    "Dune": "https://cdn2.steamgriddb.com/icon_thumb/3e9f7c16bd1cdea78f8e2eea72dfdfbe.png",
+    "Eggy Car": "https://imgs.crazygames.com/eggy-car/20230720050147/eggy-car-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Elastic Face": "https://img.gamemonetize.com/hzi4wc6l26tv72testxkdb8wd782a4ar/512x512.jpg",
+    "Escape Road": "https://imgs.crazygames.com/escape-road-asm_1x1/20250724105032/escape-road-asm_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Escape Road 2": "https://imgs.crazygames.com/escape-road-2_1x1/20251121100622/escape-road-2_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Fears To Fathom": "https://images.stopgame.ru/games/logos/25347/fears_to_fathom_episode_2_northwood_hitchhike-square.jpg",
+    "Fire Boy and Water Girl": "https://img.gamedistribution.com/1c60c96ecd6f4d928497c7eaa58f150f-512x512.jpeg",
+    "Fire Boy and Water Girl 2": "https://minigamesville.com/wp-content/uploads/2025/08/Fireboy-and-Watergirl-2-Light-Temple.png",
+    "Fire Boy and Water Girl 3": "https://play.gilect.com/images/icons/fireboyandwatergirl3.webp",
+    "Five Nights at Freddy's": "https://cdn.cloudflare.steamstatic.com/steam/apps/319510/header.jpg",
+    "Five Nights at Freddy's 2": "https://cdn.cloudflare.steamstatic.com/steam/apps/332800/header.jpg",
+    "Five Nights at Freddy's 3": "https://cdn.cloudflare.steamstatic.com/steam/apps/354140/header.jpg",
+    "Five Nights at Freddy's 4": "https://cdn.cloudflare.steamstatic.com/steam/apps/388090/header.jpg",
+    "Five Nights at Freddy's Pizza Simulator": "https://assets-prd.ignimgs.com/2021/04/20/freddy-fazbears-pizzeria-simulator-button-fin-1618957690332.jpg",
+    "Five Nights at Freddy's Sister Location": "https://cdn.cloudflare.steamstatic.com/steam/apps/506610/header.jpg",
+    "Five Nights at Freddy's UCN": "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/b5a3564a-b113-4f9e-b5e5-386108005e7a/dcknubr-2d04807e-ddc0-458c-8b4c-8ca646fc24c8.png/v1/fill/w_894,h_894,q_70,strp/_fnaf_sfm__fnaf_ultimate_custom_night_icon_remake_by_eliterobo_dcknubr-pre.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9MjE2MCIsInBhdGgiOiJcL2ZcL2I1YTM1NjRhLWIxMTMtNGY5ZS1iNWU1LTM4NjEwODAwNWU3YVwvZGNrbnVici0yZDA0ODA3ZS1kZGMwLTQ1OGMtOGI0Yy04Y2E2NDZmYzI0YzgucG5nIiwid2lkdGgiOiI8PTIxNjAifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6aW1hZ2Uub3BlcmF0aW9ucyJdfQ.98yYcccE0QlUjUvvUQ_u_bF7c4Ppl-J0tPad-oSCPsc",
+    "Five Nights at Freddy's World": "https://images.sftcdn.net/images/t_app-cover-l,f_auto/p/e82a9b66-96d0-11e6-9760-00163ed833e7/2953041922/five-nights-at-freddys-world-screenshot.jpg",
+    "Five Nights at Winston's": "https://gogamego.io/wp-content/uploads/thumbs/custom/F/five-nights-at-winstons.webp",
+    "Flappy Bird": "https://assets-prd.ignimgs.com/2024/09/12/flappy-bird-2024-button-1726152324038.jpg",
+    "Flood Runner 2": "http://www.playgamesarcade.com/games/images/the-flood-runner-2_1.jpg",
+    "Flood Runner 3": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/d3c19e9b-9b7b-4a54-9cb5-6188a5bd7d3b/run-3.png",
+    "Flood Runner 4": "https://dinosaurgame-free.io/data/image/game/flood-runner-4/flood-runner-4.webp",
+    "Football Bros": "https://brainrot-clicker.io/data/image/game/football-bros/football-bros.png",
+    "Football Legends": "https://minigamesville.com/wp-content/uploads/2025/08/Football-Legends.png",
+    "Fruit Ninja": "https://assets-prd.ignimgs.com/2023/04/03/fruitninjaclassic-1680558768519.jpg",
+    "GBA Emulator": "https://e7.pngegg.com/pngimages/84/33/png-clipart-pokemon-firered-and-leafgreen-gba-emulator-game-boy-advance-visualboyadvance-android-purple-gadget.png",
+    "Geometry Dash": "https://cdn.cloudflare.steamstatic.com/steam/apps/322170/library_600x900.jpg",
+    "Getaway Shoot out": "https://imgs.crazygames.com/getaway-shootout_1x1/20241230044730/getaway-shootout_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Getting Over It": "https://imgs.crazygames.com/auto-covers/getting-over-it_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Granny": "https://cdn.cloudflare.steamstatic.com/steam/apps/962400/library_600x900.jpg",
+    "Granny 2": "https://woogames.io/data/image/game/granny-2-original/granny-2-original.png",
+    "Gun Knight": "https://imgcdn.stablediffusionweb.com/2024/12/31/72f42424-e179-4e31-bfce-f80809c8273c.jpg",
+    "Gun Mayhem": "https://imgs.crazygames.com/auto-covers/gun-mayhem_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Half Life": "https://cdn.cloudflare.steamstatic.com/steam/apps/70/library_600x900.jpg",
+    "Happy Wheels": "https://imgs.crazygames.com/auto-covers/happy-wheels_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Heist": "https://img.poki-cdn.com/cdn-cgi/image/quality=78,width=1200,height=1200,fit=cover,f=png/a8bc627e1dd6ae63c78dd1f5ab17cc1d.png",
+    "Helix Jump": "https://imgs.crazygames.com/games/helix-jump/cover_1x1-1732745006096.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Henry Stickmin Breaking the Bank": "https://www.onlinegames.io/media/posts/951/Stickmin-Breaking-the-Bank.jpg",
+    "Henry Stickmin Escaping the Prison": "https://www.onlinegames.io/media/posts/955/Henry-Stickmin-Escaping-the-Prison-Online.jpg",
+    "Hill Climb Racing": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/b87616bb88c0e3cb4c150c59fdc767fa/hill-climb-racing-lite.png",
+    "Hole io": "https://cdn.cloudflare.steamstatic.com/steam/apps/2751230/library_600x900.jpg",
+    "Hollow Knight": "https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg",
+    "Hollow Knight, Silk Song": "https://cdn.cloudflare.steamstatic.com/steam/apps/1030300/library_600x900.jpg",
+    "Hotline Miami": "https://cdn.cloudflare.steamstatic.com/steam/apps/219150/library_600x900.jpg",
+    "Idle Miner Tycoon": "https://img.poki-cdn.com/cdn-cgi/image/quality=78,width=1200,height=1200,fit=cover,f=png/b827914c3e4365d83def2fbb8b4c8684.png",
+    "Jetpack Joyride": "https://imgs.crazygames.com/jetpack-joyride-pcp_1x1/20250121090354/jetpack-joyride-pcp_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Just Fall LOL": "https://gamepluto.com/thumbs/justfall-lol-justfall.jpg",
+    "Learn To Fly": "https://coolmathgameskids.com/wp-content/thumbs/Learn-to-Fly-2.jpg",
+    "Learn To Fly 2": "https://snow-rider.io/data/image/game/learn-to-fly-2.png",
+    "Learn To Fly 3": "https://cdn.cloudflare.steamstatic.com/steam/apps/589870/header.jpg",
+    "Legend of Zelda Majora's Mask": "https://cdn2.steamgriddb.com/icon_thumb/6451343e4f4041fb19ddf7b9dc58538b.png",
+    "Legend of Zelda Ocarina of Time": "https://assets1.ignimgs.com/2019/06/04/legend-of-zelda-ocarina-of-time-3d-1559683061479.jpg",
+    "Level Devil": "https://cdn.cloudflare.steamstatic.com/steam/apps/3242750/library_600x900.jpg",
+    "Little Alchemy 2": "https://imgs.crazygames.com/auto-covers/little-alchemy-2_1x1?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Madalin Stunt Cars 2": "https://imgs.crazygames.com/games/madalin-stunt-cars-2/cover_1x1-1695113655014.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Madalin Stunt Cars 3": "https://imgs.crazygames.com/games/madalin-stunt-cars-2/cover_1x1-1695113655014.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Melon Playground": "https://static.wikia.nocookie.net/playground-melon/images/e/e2/Melon_Sandbox_23.0_Logo.jpg/revision/latest?cb=20240516085007",
+    "Merge Round Racers": "https://minigamesville.com/wp-content/uploads/2025/08/Merge_Round_Racers.png",
+    "Mine Sweeper": "https://www.onlinegames.io/media/posts/577/Microsoft-Minesweeper.jpg",
+    "Minecraft": "https://static.wikia.nocookie.net/91f93417-ff63-4629-8e15-2ddba75730ca/scale-to-width/755",
+    "Monkey Mart": "https://minigamesville.com/wp-content/uploads/2025/08/Monkey_Mart.png",
+    "Moto X3M": "https://imgs.crazygames.com/moto-x3m_1x1/20231122033955/moto-x3m_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Moto X3M 2": "https://minigamesville.com/wp-content/uploads/2025/08/Moto-X3M-2.png",
+    "Moto X3M 3": "https://img.poki-cdn.com/cdn-cgi/image/quality=78,width=1200,height=1200,fit=cover,f=png/c28eee5a5924e8a70afb2c1490d9b571.jpeg",
+    "Moto X3M Pool Party": "https://imgs.crazygames.com/moto-x3m-pool-party_1x1/20241128073649/moto-x3m-pool-party_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Moto X3M Spooky Land": "https://imgs.crazygames.com/moto-x3m-spooky-land_1x1/20241128073537/moto-x3m-spooky-land_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Moto X3M Winter": "https://imgs.crazygames.com/moto-x3m-4_1x1/20241128073655/moto-x3m-4_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Moto X3M Winter Land": "https://www.onlinegames.io/media/posts/820/responsive/Moto-X3M-winter-sm.jpg",
+    "Only Up": "https://cdn.cloudflare.steamstatic.com/steam/apps/2842590/library_600x900.jpg",
+    "OvO": "https://img.poki-cdn.com/cdn-cgi/image/quality=78,width=1200,height=1200,fit=cover,f=png/85db6b2eb81ca64d881a950a43744389.png",
+    "OvO 2": "https://img.poki-cdn.com/cdn-cgi/image/quality=78,width=1200,height=1200,fit=cover,f=png/85db6b2eb81ca64d881a950a43744389.png",
+    "OvO 3": "https://img.poki-cdn.com/cdn-cgi/image/quality=78,width=1200,height=1200,fit=cover,f=png/85db6b2eb81ca64d881a950a43744389.png",
+    "Pac Man": "https://imgs.crazygames.com/pacman.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Papa's Bakeria": "https://imgs.crazygames.com/games/papas-bakeria/cover-1676900441281.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Papa's Burgeria": "https://imgs.crazygames.com/games/papa-s-burgeria/cover_1x1-1707731580054.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Papa's Cheeseria": "https://imgs.crazygames.com/auto-covers/papas-cheeseria_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Papa's Cupcakeria": "https://imgs.crazygames.com/auto-covers/papas-cupcakeria_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Papa's Donuteria": "https://imgs.crazygames.com/games/papas-donuteria/cover-1684307679932.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Papa's Freezeria": "https://imgs.crazygames.com/auto-covers/papas-freezeria_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Papa's Hot Doggeria": "https://imgs.crazygames.com/games/papas-hotdoggeria/cover-1676907963250.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Papa's Pancakeria": "https://imgs.crazygames.com/games/papas-pancakeria/cover-1684228774621.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Papa's Pastaria": "https://imgs.crazygames.com/auto-covers/papas-pastaria_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Papa's Pizzeria": "https://imgs.crazygames.com/auto-covers/papas-pizzeria_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Papa's Scooperia": "https://imgs.crazygames.com/auto-covers/papa-s-scooperia_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Papa's Sushiria": "https://imgs.crazygames.com/auto-covers/papas-sushiria_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Papa's Tacoria": "https://img.poki.com/cdn-cgi/image/quality=78,width=1200,height=1200,fit=cover,f=png/b8890c228e7846cee4a05c03eedecea3.jpeg",
+    "Papa's Wingeria": "https://imgs.crazygames.com/games/papas-wingeria/cover-1684307852237.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Paper io 2": "https://imgs.crazygames.com/paper-io-2_1x1/20250214024144/paper-io-2_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Parking Fury": "https://77pen.github.io/img/parking-fury.png",
+    "Parking Fury 2": "https://bizofgames.com/wp-content/uploads/thumbs/custom/P/Parking-Fury-2.webp",
+    "Parking Fury 3": "https://www.hoodamath.com/large/1024/parkingfury3_1024.png",
+    "People Playground": "https://cdn.cloudflare.steamstatic.com/steam/apps/1118200/library_600x900.jpg",
+    "Pixel Shooter": "https://imgs.crazygames.com/auto-covers/pixel-shooter_1x1?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Plants vs Zombies": "https://assets-prd.ignimgs.com/2022/04/24/pvz2-1650822858063.jpg",
+    "Poly Track": "https://imgs.crazygames.com/polytrack_1x1/20260310095956/polytrack_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Pou": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Pou_by_Paul_Salameh.svg/1280px-Pou_by_Paul_Salameh.svg.png",
+    "Repo": "https://assets-prd.ignimgs.com/2025/02/27/repo-button-1740672104138.jpg",
+    "Retro Bowl": "https://minigamesville.com/wp-content/uploads/2025/08/Retro_Bowl.png",
+    "Retro Bowl College": "https://retrobowlplus.com/cache/data/image/game/retro-bowl-college-poki-cover-m200x200.png",
+    "Rocket Soccer": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/e521bbbf13a6480b60d75421e7edc8d8d0e1edadaccd7d43438864b62a74088a/rocket-soccer-derby.png",
+    "Rolling Sky": "https://cdn.cloudflare.steamstatic.com/steam/apps/1242670/library_600x900.jpg",
+    "Rooftop Snipers": "https://imgs.crazygames.com/rooftop-snipers_1x1/20250108040441/rooftop-snipers_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Rooftop Snipers 2": "https://imgs.crazygames.com/rooftop-snipers_1x1/20250108040441/rooftop-snipers_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Run": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/d3c19e9b-9b7b-4a54-9cb5-6188a5bd7d3b/run-3.png",
+    "Run 2": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/d3c19e9b-9b7b-4a54-9cb5-6188a5bd7d3b/run-3.png",
+    "Run 3": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/d3c19e9b-9b7b-4a54-9cb5-6188a5bd7d3b/run-3.png",
+    "Sandtris": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/ecd6242d6645b16e38220e88d5146301/sandtris-logo.png",
+    "Secret": "https://assets-prd.ignimgs.com/2023/05/09/clue-1683652732753.jpg",
+    "Slope": "https://jasongamesdev.github.io/slope/slope.png",
+    "Slope 2": "https://raw.githubusercontent.com/sz-games/sz-games.github.io/main/cover/slope2.png",
+    "Slope 3": "https://img.gamedistribution.com/b82efa0f9d7648beb126d62c0fb9363d-512x512.jpeg",
+    "Snake io": "https://imgs.crazygames.com/snake-io_1x1/20260302021932/snake-io_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Snow Rider 3D": "https://imgs.crazygames.com/snow-rider-3d_1x1/20260120063435/snow-rider-3d_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Snowball io": "https://imgs.crazygames.com/auto-covers/snowball-io_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Soccer Bros": "https://imgs.crazygames.com/soccer-bros_1x1/20240109055124/soccer-bros_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Soccer Random": "https://imgs.crazygames.com/games/soccer-random/cover_1x1-1732744645780.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Speed Stars": "https://cdn.cloudflare.steamstatic.com/steam/apps/1482700/library_600x900.jpg",
+    "Stack": "https://game-icons.net/icons/ffffff/000000/1x1/delapouite/stack.png",
+    "Steal A Brainrot": "https://steal-a-brainrot.net/assets/steal-brainrots/steal-brainrots-logo.webp",
+    "Stickman Climb": "https://img.poki-cdn.com/cdn-cgi/image/quality=78,width=1200,height=1200,fit=cover,f=png/0796f5ed1226cd229d7de1f68906d085.png",
+    "Stickman Hook": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/99e090d154caf30f3625df7e456d5984/stickman-hook.png",
+    "Stumble Guys": "https://cdn.cloudflare.steamstatic.com/steam/apps/1677740/library_600x900.jpg",
+    "Subway Surfers": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/f76a28c7ba36224a165fdcf3f935f90c/subway-surfers.png",
+    "Super Hot": "https://imgs.crazygames.com/auto-covers/super-hot_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Super Mario 64": "https://cdn2.steamgriddb.com/file/sgdb-cdn/icon/42998cf32d552343bc8e460416382dca/32/512x512.png",
+    "Temple Run 2": "https://assets-prd.ignimgs.com/2023/04/02/templerun2-1680461914458.jpg",
+    "Tetris": "https://assets-prd.ignimgs.com/2022/01/28/tetris-sq-1643414363421.jpg",
+    "The Impossible Quiz": "https://imgs.crazygames.com/the-impossible-quiz_1x1/20260130024413/the-impossible-quiz_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "The Oregon Trail": "https://cdn.cloudflare.steamstatic.com/steam/apps/2013360/library_600x900.jpg",
+    "This is The Only Level": "https://imgs.crazygames.com/auto-covers/this-is-the-only-level_1x1.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Time Shooter 2": "https://imgs.crazygames.com/time-shooter-2_1x1/20241113040556/time-shooter-2_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Time Shooter 3 S.W.A.T": "https://imgs.crazygames.com/time-shooter-3-swat_1x1/20241113103402/time-shooter-3-swat_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Tiny Fishing": "https://imgs.crazygames.com/games/tiny-fishing/cover_1x1-1707829871792.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Tomb of The Mask": "https://nargames.com/storage/uploads/thumbs/tomb-of-the-mask.webp",
+    "Tunnel Rush 2": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/9c5e0de489bb6f6f99e9bb0bce8341ac/tunnel-rush-2.png",
+    "Vex 7": "https://img.gamedistribution.com/762c932b4db74c6da0c1d101b2da8be6-512x512.jpg",
+    "Volley Random": "https://imgs.crazygames.com/auto-covers/volley-random_1x1?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "We Become What We Behold": "https://imgs.crazygames.com/webecomewhatwebeholdb.png?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "Wordle": "https://imgs.crazygames.com/wordler_1x1/20241122084206/wordler_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop",
+    "World Guessr": "https://www.onlinegames.io/media/posts/888/world-guesser.jpg",
+    "World's Hardest Game 3": "https://cdn.cloudflare.steamstatic.com/steam/apps/1489000/library_600x900.jpg",
+    "Wrestle Bros": "https://imgs.crazygames.com/wrestle-bros_1x1/20250320082313/wrestle-bros_1x1-cover?auto=format,compress&q=75&cs=strip&ch=DPR&w=300&h=300&fit=crop"
+  };
+
   let games = [];       // [{ name, lower }]
   let searchDebounce = null;
 
   const grid = document.getElementById('grid');
   const search = document.getElementById('search');
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+  }
 
   function renderGames(list) {
     if (list.length === 0) {
@@ -251,17 +476,21 @@
 
     for (let i = 0; i < list.length; i++) {
       const name = list[i].name;
-      const encoded = encodeURIComponent(name);
+      const safe = escapeHtml(name);
+      const cover = COVERS[name];
+
+      const thumb = cover
+        ? `<div class="fallback">${safe}</div>` +
+          `<img src="${escapeHtml(cover)}" alt="${safe}" loading="lazy" ` +
+            `referrerpolicy="no-referrer" ` +
+            `onload="this.previousElementSibling.style.display='none'" ` +
+            `onerror="this.style.display='none'">`
+        : `<div class="fallback">${safe}</div>`;
 
       html[i] =
-        `<a class="game-card" href="./${encoded}/" target="_blank">` +
-          `<div class="thumb">` +
-            `<div class="no-image">${name}</div>` +
-            `<img src="images/${name}.png" alt="${name}" loading="lazy" ` +
-              `onload="this.previousElementSibling.style.display='none'" ` +
-              `onerror="this.style.display='none'">` +
-          `</div>` +
-          `<div class="info"><div class="name">${name}</div></div>` +
+        `<a class="game-card" href="./${encodeURIComponent(name)}/" target="_blank">` +
+          `<div class="thumb">${thumb}</div>` +
+          `<div class="info"><div class="name">${safe}</div></div>` +
         `</a>`;
     }
 
@@ -278,7 +507,6 @@
         return q === 'secret';
       }
 
-      // All other games keep the original search behavior.
       return q === '' || g.lower.includes(q);
     });
 
@@ -353,39 +581,25 @@
     }
   }
 
+  function setGames(names) {
+    games = names.map(name => ({ name, lower: name.toLowerCase() }));
+    filterGames();
+  }
+
   async function loadGames() {
-    // 1. Show cached list instantly if we have one
+    // 1. Show something instantly: cached list, otherwise the baked-in list
     const cached = readCache();
 
-    if (cached) {
-      games = cached.map(name => ({
-        name,
-        lower: name.toLowerCase()
-      }));
-
-      filterGames();
-    } else {
-      grid.innerHTML = '<div class="empty">Loading games...</div>';
-    }
+    setGames(cached || Object.keys(COVERS).sort((a, b) => a.localeCompare(b)));
 
     // 2. Always refresh in the background
     try {
       const fresh = await fetchGamesFromApi();
 
-      games = fresh.map(name => ({
-        name,
-        lower: name.toLowerCase()
-      }));
-
       writeCache(fresh);
-      filterGames();
-
+      setGames(fresh);
     } catch (err) {
       console.error('Failed to refresh games list:', err);
-
-      if (!cached) {
-        grid.innerHTML = '<div class="empty">Could not load games list</div>';
-      }
     }
   }
 
@@ -395,4 +609,3 @@
 
 </body>
 </html>
-```
