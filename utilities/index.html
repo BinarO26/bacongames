@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Information</title>
+<title>Settings</title>
 <link rel="icon" type="image/png" href="../logo.png">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -16,6 +15,13 @@
     min-height: 100vh;
     line-height: 1.5;
     overflow-x: hidden;
+    transition: background .3s ease, color .3s ease;
+  }
+
+  body.light {
+    background: linear-gradient(135deg, #ffffff, #e8edf5, #d0ddef);
+    background-size: 400% 400%;
+    color: #1e293b;
   }
 
   nav {
@@ -32,7 +38,14 @@
     padding: 6px 8px;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+    transition: background .3s ease, border-color .3s ease;
   }
+
+  body.light nav {
+    background: rgba(0,0,0,.06);
+    border-color: rgba(0,0,0,.1);
+  }
+
   nav a {
     color: rgba(255,255,255,.5);
     text-decoration: none;
@@ -43,101 +56,87 @@
     transition: all .2s ease;
     white-space: nowrap;
   }
-  nav a:hover { color: #fff; background: rgba(255,255,255,.1); transform: translateY(-1px); }
-  nav a.active { color: #000; background: #fff; font-weight: 600; }
+  body.light nav a { color: rgba(0,0,0,.45); }
+
+  nav a:hover {
+    color: #fff;
+    background: rgba(255,255,255,.1);
+    transform: translateY(-1px);
+  }
+  body.light nav a:hover {
+    color: #1a1a2e;
+    background: rgba(0,0,0,.08);
+  }
+
+  nav a.active {
+    color: #000;
+    background: #fff;
+    font-weight: 600;
+  }
+  body.light nav a.active {
+    color: #fff;
+    background: #334155;
+  }
+
   nav a.active:hover { transform: none; }
 
-  .content {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 120px 20px 100px;
+  .settings {
+    max-width: 480px;
+    margin: 120px auto 100px;
+    padding: 0 20px;
   }
 
-  .content h1 {
-    font-size: clamp(32px, 6vw, 48px);
-    font-weight: 700;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-  }
-
-  .content .subtitle {
-    color: rgba(255,255,255,.35);
-    font-size: 15px;
-    margin-bottom: 48px;
-  }
-
-  .section {
-    margin-bottom: 40px;
-  }
-
-  .section h2 {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: rgba(255,255,255,.3);
-    margin-bottom: 16px;
-  }
-
-  .card {
-    background: rgba(255,255,255,.04);
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 14px;
-    padding: 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 10px;
-    transition: all .2s ease;
-  }
-  .card:hover {
-    background: rgba(255,255,255,.07);
-    transform: translateY(-2px);
-  }
-
-  .card .avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgba(255,255,255,.08);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .settings h2 {
     font-size: 22px;
-    flex-shrink: 0;
-  }
-
-  .card .info {
-    flex: 1;
-  }
-
-  .card .name {
-    font-size: 16px;
     font-weight: 600;
-    margin-bottom: 2px;
+    margin-bottom: 28px;
   }
 
-  .card .role {
-    font-size: 13px;
-    color: rgba(255,255,255,.4);
+  .setting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    transition: border-color .3s ease;
+  }
+  body.light .setting { border-color: rgba(0,0,0,.1); }
+
+  .setting:last-child { border-bottom: none; }
+
+  .setting-label {
+    font-size: 15px;
+    color: rgba(255,255,255,.7);
+  }
+  body.light .setting-label { color: rgba(0,0,0,.6); }
+
+  .toggle {
+    width: 44px;
+    height: 24px;
+    background: rgba(255,255,255,.15);
+    border-radius: 999px;
+    position: relative;
+    cursor: none;
+    transition: background .2s ease;
   }
 
-  .card .role b {
-    color: rgba(57,255,158,.7);
-    font-weight: 500;
+  .toggle::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform .2s ease;
   }
 
-  .about {
-    background: rgba(255,255,255,.04);
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 14px;
-    padding: 20px;
-  }
-
-  .about p {
-    font-size: 14px;
-    color: rgba(255,255,255,.5);
-    line-height: 1.7;
-  }
+  .toggle.on { background: rgba(255,255,255,.4); }
+  body.light .toggle.on { background: #334155; }
+  .toggle.on::after { transform: translateX(20px); }
+  body.light .toggle::after { background: #334155; }
+  body.light .toggle.on::after { background: #fff; }
 
   footer {
     position: fixed;
@@ -147,7 +146,9 @@
     padding: 20px;
     font-size: 13px;
     color: rgba(255,255,255,.25);
+    transition: color .3s ease;
   }
+  body.light footer { color: rgba(0,0,0,.3); }
 </style>
 </head>
 <body>
@@ -155,110 +156,15 @@
 <nav>
   <a href="https://binaro26.github.io/bacongames/">Home</a>
   <a href="https://binaro26.github.io/bacongames/games">Games</a>
-  <a href="https://binaro26.github.io/bacongames/info" class="active">Information</a>
-  <a href="https://binaro26.github.io/bacongames/settings">Settings</a>
+  <a href="https://binaro26.github.io/bacongames/info">Information</a>
+  <a href="https://binaro26.github.io/bacongames/settings" class="active">Settings</a>
      <a href="https://binaro26.github.io/bacongames/utilities" class="btn">Utilities</a>
 </nav>
 
-<div class="content">
-  <h1>Information</h1>
-  <p class="subtitle">Everything about Bacon Games</p>
-
-  <div class="section">
-    <h2>Credits</h2>
-    <div class="card">
-      <div class="avatar">&#128100;</div>
-      <div class="info">
-        <div class="name">Pausuu</div>
-        <div class="role"><b>Website & Design</b> — Built the entire frontend, UI/UX, and site architecture</div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="avatar">&#128100;</div>
-      <div class="info">
-        <div class="name">Binaro26</div>
-        <div class="role"><b>Game Ports</b> — Found and sourced all the HTML game ports</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <h2>About</h2>
-    <div class="about">
-      <p>Bacon Games is a curated collection of HTML games built to be simple, safe, and fun. Whether you're at school or home, open up any browser and start playing — no downloads, no signups, just games.</p>
-    </div>
-  </div>
+<div class="settings">
+  <h2>Settings</h2>
 </div>
 
- <!-- Always-Visible Google Form Widget -->
-<div id="stickyFormWidget">
-    <div class="form-header" onclick="toggleWidgetForm()">
-        <span>Feedback & Contact</span>
-        <span id="widgetToggleIcon">▼</span>
-    </div>
-    <div id="widgetFormBody">
-        <!-- REPLACE THE SRC LINK BELOW WITH YOUR GOOGLE FORM EMBED LINK -->
-        <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScW2Soa5MRYKWVWTf_XJfWwRB7uwpZACBnqfSJUS0YqmaWTYg/viewform?usp=dialog">Loading…</iframe>
-    </div>
-</div>
-
-<style>
-    /* Fixed container anchored to the bottom right */
-    #stickyFormWidget {
-        position: fixed;
-        bottom: 0;
-        right: 20px;
-        width: 360px;
-        z-index: 9999;
-        box-shadow: 0px -2px 10px rgba(0, 0, 0, 0.15);
-        border-radius: 8px 8px 0 0;
-        overflow: hidden;
-        font-family: sans-serif;
-        background: #fff;
-    }
-
-    /* Header bar style mimicking a docked gadget */
-    #stickyFormWidget .form-header {
-        background-color: #673ab7; /* Google Purple */
-        color: white;
-        padding: 12px 16px;
-        font-weight: bold;
-        cursor: pointer;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    /* Container for the iframe form */
-    #widgetFormBody {
-        height: 450px; /* Adjust height based on your form length */
-        display: block; /* Change to 'none' if you want it collapsed by default */
-    }
-
-    #widgetFormBody iframe {
-        width: 100%;
-        height: 100%;
-        border: none;
-    }
-</style>
-
-<script>
-    // Allows users to minimize/expand the form by clicking the header
-    function toggleWidgetForm() {
-        var formBody = document.getElementById("widgetFormBody");
-        var toggleIcon = document.getElementById("widgetToggleIcon");
-        
-        if (formBody.style.display === "none") {
-            formBody.style.display = "block";
-            toggleIcon.textContent = "▼";
-        } else {
-            formBody.style.display = "none";
-            toggleIcon.textContent = "▲";
-        }
-    }
-</script>
-
- 
 <footer>Created by Pausuu & Binaro26</footer>
 
 </body>
